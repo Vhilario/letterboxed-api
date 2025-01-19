@@ -24,6 +24,8 @@ def read_root():
         return letter_boxed_data
         
     # If we get here, we need new data
+    reason = 'puzzle expired' if letter_boxed_data is not None else 'no data found'
+    print(f'returning new data, for reason: {reason}')
     letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
     return letter_boxed_data
 
