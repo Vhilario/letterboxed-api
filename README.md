@@ -1,6 +1,6 @@
 # Letter Boxed API
 
-This is a simple API for the Letter Boxed puzzle from the New York Times. It's built with Flask and uses a JSON file to store the data.
+This is a simple API for the Letter Boxed puzzle from the New York Times. It's built with FastAPI and uses a JSON file to store the data.
 
 ## Usage
 
