@@ -17,3 +17,7 @@ uvicorn main:app --reload
 
 This will start the API and you can access the data at: ```http://127.0.0.1:8000/get_letter_boxed_data```
 
+### Data
+
+The data is returned to the client in JSON format, and locally stored in the `letter_boxed_data.json` file. The data is also validated and solved by the API. The `apiSolutions` key is the list of two-word solutions returned by the API, while everything else is data scraped from the NYT website.
+
