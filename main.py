@@ -104,22 +104,27 @@ def validate_data(letter_boxed_data):
 
 def solve_letter_boxed_data(letter_boxed_data):
     words = letter_boxed_data['dictionary']
-    letters =  set(''.join(letter_boxed_data['sides']))
+    letters = set(''.join(letter_boxed_data['sides']))
     sides = letter_boxed_data['sides']
     solutions = []
-    for pair in itertools.combinations(words, 2):
-        #check if the pair is valid solution (last letter of first word is the first letter of the second word)
+    
+    for pair in itertools.permutations(words, 2):
+        # check if the pair is valid solution (last letter of first word is the first letter of the second word)
         if not pair[0][-1] == pair[1][0]:
             continue
-        #check if the pair is valid solution (all letters in the pair are in the letters set)
+            
+        # check if all letters in the pair are valid letters from the puzzle
         solution_letters = set(pair[0] + pair[1])
-        if not solution_letters <= letters:
+        if not solution_letters.issubset(letters):
             continue
-        #check if the pair is valid solution (all letters in the pair are in the sides set)
+            
+        # check if the pair uses all required letters
         if not solution_letters.issuperset(letters):
             continue
-        solutions.append(pair)
-    print(f'solutions: {solutions}')
+            
+        solutions.append(list(pair))
+    
     return solutions
+
 
 
