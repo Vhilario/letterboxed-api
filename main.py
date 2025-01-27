@@ -139,6 +139,8 @@ def solve_letter_boxed_data(letter_boxed_data):
             continue
             
         # check if the pair uses all required letters
+            
+        # check if the pair uses all required letters
         if not solution_letters.issuperset(letters):
             continue
         
