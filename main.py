@@ -32,6 +32,8 @@ async def schedule_next_fetch():
         
         # Wait until expiration then fetch new data
         await asyncio.sleep(delay)
+
+        print('Fetching new data')
         letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
         
         # Schedule the next fetch
@@ -40,7 +42,12 @@ async def schedule_next_fetch():
 #I don't know how FastAPI does this now, apparently the on_event is deprecated, but this is the only way I know how to do it
 @app.on_event("startup")
 async def startup_event():
+    # On every startup, run the read_root function
+    print('Startup: getting initial data')
+    await read_root()
+
     # Start the background task when the app starts
+    print('Starting background task')
     asyncio.create_task(schedule_next_fetch())
 
 @app.get("/get_letter_boxed_data")
@@ -50,13 +57,13 @@ async def read_root():
     
     # Check if we have data and it hasn't expired
     if letter_boxed_data is not None and current_timestamp < letter_boxed_data.get('expiration', 0):
-        print(f'returning cached data, for puzzle {letter_boxed_data["printDate"]}')
+        print(f'Returning cached data, for puzzle {letter_boxed_data["printDate"]}')
         solve_letter_boxed_data(letter_boxed_data)
         return letter_boxed_data
     
     # If we get here, we need new data immediately
-    reason = 'puzzle expired' if letter_boxed_data is not None else 'no data found'
-    print(f'returning new data, for reason: {reason}')
+    reason = 'Puzzle has expired' if letter_boxed_data is not None else 'No data found'
+    print(f'Returning new data, for reason: {reason}')
     letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
     
     # Schedule the next fetch
@@ -82,14 +89,11 @@ def scrape_data(url):
     json_string = script_content.replace('window.gameData = ', '').replace(';', '')
     letter_boxed_data = json.loads(json_string)
 
-    # Test the validate_data function with the sample_bad_data.json file
-    # with open('sample_bad_data.json', 'r') as f:
-    #     temp = json.load(f)
-    #     validate_data(temp)
-
     validate_data(letter_boxed_data)
-    solutions = solve_letter_boxed_data(letter_boxed_data)
-    letter_boxed_data['apiSolutions'] = solutions
+    (all_solutions, one_word_solutions, perfect_solutions) = solve_letter_boxed_data(letter_boxed_data)
+    letter_boxed_data['allSolutions'] = all_solutions
+    letter_boxed_data['oneWordSolutions'] = one_word_solutions
+    letter_boxed_data['perfectSolutions'] = perfect_solutions
 
     with open('letter_boxed_data.json', 'w') as f:
         json.dump(letter_boxed_data, f)
@@ -105,26 +109,46 @@ def validate_data(letter_boxed_data):
 def solve_letter_boxed_data(letter_boxed_data):
     words = letter_boxed_data['dictionary']
     letters = set(''.join(letter_boxed_data['sides']))
-    sides = letter_boxed_data['sides']
-    solutions = []
-    
+    all_solutions = []
+
+    # Extremely rare, but possible
+    one_word_solutions = []
+    # Two word solutions that use all letters, without repeating any letters
+    perfect_solutions = []
+    # find one word solutions
+    for word in words:
+        if letters.issubset(set(word)):
+            print(f'ALERT: {word} is a one word solution')
+            one_word_solutions.append([word])
+            all_solutions.append([word])
+            if len(word) == 12:
+                perfect_solutions.append([word])
+            # remove the one word solution from the dictionary, because there will be many trivial solutions
+            words.remove(word)
+
+    # find two word solutions
     for pair in itertools.permutations(words, 2):
         # check if the pair is valid solution (last letter of first word is the first letter of the second word)
         if not pair[0][-1] == pair[1][0]:
             continue
             
-        # check if all letters in the pair are valid letters from the puzzle
         solution_letters = set(pair[0] + pair[1])
+        
+        # check if all letters in the pair are valid letters from the puzzle
         if not solution_letters.issubset(letters):
             continue
             
         # check if the pair uses all required letters
+            
+        # check if the pair uses all required letters
         if not solution_letters.issuperset(letters):
             continue
+        
+        # check if the pair uses all letters without repeating any letters
+        perfect_check = pair[0] + pair[1][1:]
+        if len(perfect_check) == len(set(perfect_check)):
+            perfect_solutions.append(list(pair))
             
-        solutions.append(list(pair))
+        all_solutions.append(list(pair))
     
-    return solutions
-
-
-
+    return (all_solutions, one_word_solutions, perfect_solutions)
