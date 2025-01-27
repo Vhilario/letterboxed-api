@@ -42,10 +42,6 @@ async def schedule_next_fetch():
 #I don't know how FastAPI does this now, apparently the on_event is deprecated, but this is the only way I know how to do it
 @app.on_event("startup")
 async def startup_event():
-    # On every startup, run the read_root function
-    print('Startup: getting initial data')
-    await read_root()
-
     # Start the background task when the app starts
     print('Starting background task')
     asyncio.create_task(schedule_next_fetch())
@@ -137,8 +133,6 @@ def solve_letter_boxed_data(letter_boxed_data):
         # check if all letters in the pair are valid letters from the puzzle
         if not solution_letters.issubset(letters):
             continue
-            
-        # check if the pair uses all required letters
             
         # check if the pair uses all required letters
         if not solution_letters.issuperset(letters):
