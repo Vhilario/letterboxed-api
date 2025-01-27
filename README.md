@@ -21,3 +21,16 @@ This will start the API and you can access the data at: ```http://127.0.0.1:8000
 
 The data is returned to the client in JSON format, and locally stored in the `letter_boxed_data.json` file. The data is also validated and solved by the API. The `apiSolutions` key is the list of two-word solutions returned by the API, while everything else is data scraped from the NYT website.
 
+#### Solution Types
+
+| Solution Type | Description |
+|--------------|-------------|
+| allSolutions | All valid solutions.|
+| oneWordSolutions | Extremely rare solutions where a single word uses all required letters from the puzzle. These are removed from the dictionary to prevent trivial two-word solutions. |
+| perfectSolutions | Any (one or two-word) solutions that use all required letters exactly once (no repeated letters). These unnecessary for winning, but some people take pride in finding them. |
+
+For example, if the puzzle letters are ["GIY", "XHA", "ERC", "LOC"]:
+- A oneWordSolution might be: ["LEXICOGRAPHY"]
+
+
+
