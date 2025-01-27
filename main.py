@@ -32,6 +32,8 @@ async def schedule_next_fetch():
         
         # Wait until expiration then fetch new data
         await asyncio.sleep(delay)
+
+        print('Fetching new data')
         letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
         
         # Schedule the next fetch
@@ -45,7 +47,7 @@ async def startup_event():
     await read_root()
 
     # Start the background task when the app starts
-    print('starting background task')
+    print('Starting background task')
     asyncio.create_task(schedule_next_fetch())
 
 @app.get("/get_letter_boxed_data")
@@ -55,13 +57,13 @@ async def read_root():
     
     # Check if we have data and it hasn't expired
     if letter_boxed_data is not None and current_timestamp < letter_boxed_data.get('expiration', 0):
-        print(f'returning cached data, for puzzle {letter_boxed_data["printDate"]}')
+        print(f'Returning cached data, for puzzle {letter_boxed_data["printDate"]}')
         solve_letter_boxed_data(letter_boxed_data)
         return letter_boxed_data
     
     # If we get here, we need new data immediately
-    reason = 'puzzle expired' if letter_boxed_data is not None else 'no data found'
-    print(f'returning new data, for reason: {reason}')
+    reason = 'Puzzle has expired' if letter_boxed_data is not None else 'No data found'
+    print(f'Returning new data, for reason: {reason}')
     letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
     
     # Schedule the next fetch
@@ -106,7 +108,6 @@ def validate_data(letter_boxed_data):
 
 def solve_letter_boxed_data(letter_boxed_data):
     words = letter_boxed_data['dictionary']
-    words.append(''.join(letter_boxed_data['sides']))
     letters = set(''.join(letter_boxed_data['sides']))
     all_solutions = []
 
