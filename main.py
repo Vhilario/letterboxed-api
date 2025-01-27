@@ -82,11 +82,6 @@ def scrape_data(url):
     json_string = script_content.replace('window.gameData = ', '').replace(';', '')
     letter_boxed_data = json.loads(json_string)
 
-    # Test the validate_data function with the sample_bad_data.json file
-    # with open('sample_bad_data.json', 'r') as f:
-    #     temp = json.load(f)
-    #     validate_data(temp)
-
     validate_data(letter_boxed_data)
     solutions = solve_letter_boxed_data(letter_boxed_data)
     letter_boxed_data['apiSolutions'] = solutions
@@ -105,9 +100,21 @@ def validate_data(letter_boxed_data):
 def solve_letter_boxed_data(letter_boxed_data):
     words = letter_boxed_data['dictionary']
     letters = set(''.join(letter_boxed_data['sides']))
-    sides = letter_boxed_data['sides']
-    solutions = []
+
+    all_solutions = []
+    # Extremely rare, but possible
+    one_word_solutions = []
     
+    # find one word solutions
+    for word in words:
+        if letters.issubset(set(word)):
+            print(f'ALERT: {word} is a one word solution')
+            one_word_solutions.append([word])
+            all_solutions.append([word])
+            # remove the one word solution from the dictionary, because there will be many trivial solutions
+            words.remove(word)
+
+    # find two word solutions
     for pair in itertools.permutations(words, 2):
         # check if the pair is valid solution (last letter of first word is the first letter of the second word)
         if not pair[0][-1] == pair[1][0]:
@@ -122,9 +129,9 @@ def solve_letter_boxed_data(letter_boxed_data):
         if not solution_letters.issuperset(letters):
             continue
             
-        solutions.append(list(pair))
+        all_solutions.append(list(pair))
     
-    return solutions
+    return all_solutions
 
 
 
