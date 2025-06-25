@@ -20,24 +20,31 @@ except (FileNotFoundError, json.JSONDecodeError):
 async def schedule_next_fetch():
     global letter_boxed_data
     
-    if letter_boxed_data is None:
-        return
-    
-    expiration = letter_boxed_data.get('expiration', 0)
-    current_time = datetime.now().timestamp()
-    
-    if expiration > current_time:
-        delay = expiration - current_time
-        print(f'Scheduling next fetch in {delay} seconds')
-        
-        # Wait until expiration then fetch new data
-        await asyncio.sleep(delay)
-
-        print('Fetching new data')
-        letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
-        
-        # Schedule the next fetch
-        asyncio.create_task(schedule_next_fetch())
+    while True:  # Continuous loop instead of recursion
+        try:
+            if letter_boxed_data is None:
+                print('No data available, waiting 60 seconds before retry')
+                await asyncio.sleep(60)
+                continue
+            
+            expiration = letter_boxed_data.get('expiration', 0)
+            current_time = datetime.now().timestamp()
+            
+            if expiration > current_time:
+                delay = expiration - current_time
+                print(f'Scheduling next fetch in {delay} seconds')
+                await asyncio.sleep(delay)
+            else:
+                print('Data expired, fetching immediately')
+            
+            print('Fetching new data')
+            letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
+            print('Successfully fetched and saved new data')
+            
+        except Exception as e:
+            print(f'Error in background task: {e}')
+            # Wait 5 minutes before retrying on error
+            await asyncio.sleep(300)
 
 #I don't know how FastAPI does this now, apparently the on_event is deprecated, but this is the only way I know how to do it
 @app.on_event("startup")
