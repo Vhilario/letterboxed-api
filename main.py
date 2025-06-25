@@ -188,3 +188,9 @@ def solve_letter_boxed_data(letter_boxed_data):
         all_solutions.append(list(pair))
     
     return (all_solutions, one_word_solutions, perfect_solutions)
+
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+print("main.py loaded")
