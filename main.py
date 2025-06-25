@@ -76,12 +76,7 @@ async def schedule_next_fetch():
 #I don't know how FastAPI does this now, apparently the on_event is deprecated, but this is the only way I know how to do it
 @app.on_event("startup")
 async def startup_event():
-    # On every startup, run the read_root function
-    logger.info('Startup: getting initial data')
-    await read_root()
-
-    # Start the background task when the app starts
-    logger.info('Starting background task')
+    # Start the background task in the background, non-blocking
     asyncio.create_task(schedule_next_fetch())
 
 @app.get("/get_letter_boxed_data")
@@ -101,9 +96,7 @@ async def read_root():
     logger.info(f'Returning new data, for reason: {reason}')
     letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
     
-    # Schedule the next fetch
-    await schedule_next_fetch()
-    
+    # Do NOT start the background task here!
     return letter_boxed_data
 
 @timing
