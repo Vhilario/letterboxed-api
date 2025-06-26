@@ -28,13 +28,25 @@ app = FastAPI()
 
 def timing(func):
     @wraps(func)
-    def wrap(*args, **kw):
+    async def async_wrap(*args, **kw):
+        ts = time()
+        result = await func(*args, **kw)
+        te = time()
+        logger.info(f'{func.__name__} took: {te-ts} seconds')
+        return result
+
+    @wraps(func)
+    def sync_wrap(*args, **kw):
         ts = time()
         result = func(*args, **kw)
         te = time()
         logger.info(f'{func.__name__} took: {te-ts} seconds')
         return result
-    return wrap
+
+    if asyncio.iscoroutinefunction(func):
+        return async_wrap
+    else:
+        return sync_wrap
 
 # Initialize letter_boxed_data from file if it exists
 try:
@@ -65,7 +77,7 @@ async def schedule_next_fetch():
                 logger.info('Data expired, fetching immediately')
             
             logger.info('Fetching new data')
-            letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
+            letter_boxed_data = await scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
             logger.info('Successfully fetched and saved new data')
             
         except Exception as e:
@@ -85,22 +97,18 @@ async def read_root():
     global letter_boxed_data
     current_timestamp = int(datetime.now().timestamp())
     
-    # Check if we have data and it hasn't expired
     if letter_boxed_data is not None and current_timestamp < letter_boxed_data.get('expiration', 0):
         logger.info(f'Returning cached data, for puzzle {letter_boxed_data["printDate"]}')
-        solve_letter_boxed_data(letter_boxed_data)
+        await solve_letter_boxed_data(letter_boxed_data)
         return letter_boxed_data
     
-    # If we get here, we need new data immediately
     reason = 'Puzzle has expired' if letter_boxed_data is not None else 'No data found'
     logger.info(f'Returning new data, for reason: {reason}')
-    letter_boxed_data = scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
-    
-    # Do NOT start the background task here!
+    letter_boxed_data = await scrape_data("https://www.nytimes.com/puzzles/letter-boxed")
     return letter_boxed_data
 
 @timing
-def scrape_data(url):
+async def scrape_data(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     
@@ -118,8 +126,8 @@ def scrape_data(url):
     json_string = script_content.replace('window.gameData = ', '').replace(';', '')
     letter_boxed_data = json.loads(json_string)
 
-    validate_data(letter_boxed_data)
-    (all_solutions, one_word_solutions, perfect_solutions) = solve_letter_boxed_data(letter_boxed_data)
+    await validate_data(letter_boxed_data)
+    (all_solutions, one_word_solutions, perfect_solutions) = await solve_letter_boxed_data(letter_boxed_data)
     letter_boxed_data['allSolutions'] = all_solutions
     letter_boxed_data['oneWordSolutions'] = one_word_solutions
     letter_boxed_data['perfectSolutions'] = perfect_solutions
@@ -129,7 +137,7 @@ def scrape_data(url):
     return letter_boxed_data
 
 @timing
-def validate_data(letter_boxed_data):
+async def validate_data(letter_boxed_data):
     required_keys = ['ourSolution', 'printDate', 'sides', 'date', 'dictionary']
     for key in required_keys:
         if key not in letter_boxed_data:
@@ -137,7 +145,7 @@ def validate_data(letter_boxed_data):
     return True
 
 @timing
-def solve_letter_boxed_data(letter_boxed_data):
+async def solve_letter_boxed_data(letter_boxed_data):
     words = letter_boxed_data['dictionary']
     letters = set(''.join(letter_boxed_data['sides']))
     all_solutions = []
